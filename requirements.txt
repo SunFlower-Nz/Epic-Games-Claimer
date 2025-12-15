@@ -2,14 +2,18 @@
 # Epic Games Claimer - Dependências Python
 # Instale com: pip install -r requirements.txt
 
-# Automação de Browser
-playwright==1.40.0
+# Requisições HTTP
+requests>=2.31.0
+
+# Contorno automático de Cloudflare
+cloudscraper>=1.2.71
 
 # Gerenciamento de variáveis de ambiente
-python-dotenv==1.0.0
+python-dotenv>=1.0.0
 
-# Requisições HTTP
-requests==2.31.0
+# Extração automática de cookies do Chrome (Windows) - legacy, Chrome < 127
+pywin32>=306; sys_platform == "win32"
+cryptography>=41.0.0
 
-# Utilitários
-pathlib2==2.3.7; python_version < '3.4'
+# Extração de cookies via browser automation (Chrome 127+)
+playwright>=1.40.0

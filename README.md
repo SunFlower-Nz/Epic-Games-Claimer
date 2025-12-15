@@ -1,89 +1,101 @@
-# 🎮 Epic Games Claimer - Free Games Automation
+# 🎮 Epic Games Claimer
 
-Automate claiming free games from the Epic Games Store with this complete and robust Python script.
+Automatize a coleta de jogos grátis da Epic Games Store com requisições HTTP puras - sem navegador, sem UI!
 
-## 📋 Table of Contents
+## 📋 Índice
 
-- [Description](#-description)
-- [Features](#-features)
-- [Prerequisites](#-prerequisites)
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Usage](#-usage)
-- [Scheduling](#-scheduling)
-- [Log Structure](#-log-structure)
+- [Descrição](#-descrição)
+- [Funcionalidades](#-funcionalidades)
+- [Instalação](#-instalação)
+- [Configuração](#-configuração)
+- [Como Usar](#-como-usar)
+- [Agendamento Automático](#-agendamento-automático)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
 - [Troubleshooting](#-troubleshooting)
-- [Security](#-security)
 
-## 🎯 Description
+## 🎯 Descrição
 
-This project fully automates the process of claiming free games from the Epic Games Store. The script:
+Este projeto automatiza completamente o processo de coleta de jogos grátis da Epic Games Store usando **apenas requisições HTTP**:
 
-- Automatically logs into your Epic Games account
-- Detects available free games
-- Adds games to your library automatically
-- Queries unofficial APIs for upcoming game information
-- Produces detailed logs organized by date
-- Saves information in JSON for future reference
+- ✅ Autentica via token do navegador ou device auth
+- ✅ Detecta jogos grátis via API GraphQL oficial
+- ✅ Adiciona os jogos à sua biblioteca automaticamente
+- ✅ Gera logs detalhados organizados por data
+- ✅ **Agendamento interno** - verifica diariamente às 12:00
 
-## ✨ Features
+## ✨ Funcionalidades
 
-- ✅ **Full automation** using Playwright (more modern and reliable than Selenium)
-- ✅ **2FA support** — script will pause to allow manual verification
-- ✅ **CAPTCHA detection** — waits for manual resolution and continues automatically
-- ✅ **Organized logs** — saved in a YYYY/MM/DD.txt directory structure
-- ✅ **API queries** — get current and upcoming free game info
-- ✅ **Robust error handling** — resilient to common failures
-- ✅ **Single-run friendly** — great for scheduling via cron or Task Scheduler
-- ✅ **Configurable via .env** — no need to edit code
+| Recurso | Descrição |
+|---------|-----------|
+| 🌐 **100% HTTP** | Sem browser, sem UI, sem Playwright/Selenium |
+| 🔑 **Múltiplas autenticações** | Token do browser, device auth, ou .env |
+| ⏰ **Scheduler interno** | Executa automaticamente às 12:00 diariamente |
+| 💾 **Persistência de sessão** | Token salvo para próximas execuções |
+| 📊 **Logs detalhados** | Organizados em `logs/YYYY/MM/DD.txt` |
+| 🔄 **Renovação automática** | Detecta e renova tokens expirados |
+| ⚡ **Leve e rápido** | Execução em segundos, ~2MB de dependências |
 
-## 🔧 Prerequisites
+## 🔧 Instalação
 
-- **Python 3.8+** installed
-- **Epic Games Store account** (free)
-- **Internet connection**
-- **Operating system**: Windows, Linux, or macOS
-
-## 📥 Installation
-
-### Step 1: Clone or Download the Project
+### 1. Clone o Repositório
 
 ```bash
-# Clone the repository (or download and extract the ZIP)
-cd /path/to/project/epic_games_claimer
+git clone https://github.com/SunFlower-Nz/Epic-Games-Claimer.git
+cd Epic-Games-Claimer
 ```
 
-### Step 2: Create a Virtual Environment (Recommended)
+### 2. Crie um Ambiente Virtual
 
 ```bash
 # Windows
-python -m venv venv
-venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate
 
 # Linux/macOS
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 
-### Step 3: Install Dependencies
+### 3. Instale as Dependências
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 4: Install Playwright Browsers
+## ⚙️ Configuração
+
+### Opção 1: Token do Navegador (Recomendado)
+
+1. Abra https://store.epicgames.com e faça login
+2. Pressione `F12` → **Application** → **Cookies** → `store.epicgames.com`
+3. Copie o valor do cookie `EPIC_EG1` (começa com `eg1~...`)
+4. Execute o script helper:
 
 ```bash
-playwright install chromium
+python scripts/get_cookies.py
+# Cole o token quando solicitado
 ```
 
-> Note: This command downloads the Chromium browser used for automation (~150MB)
+### Opção 2: CF_CLEARANCE via Playwright (Automático)
 
-## ⚙️ Configuration
+Se você receber erro `GraphQL request blocked` (Cloudflare), use:
 
-### Step 1: Set Up Credentials
+```bash
+python get_cf_clearance.py
+```
 
-1. Copy the example file:
+Este script:
+- ✅ Abre um navegador automaticamente  
+- ✅ Você faz login normalmente
+- ✅ Aguarda resolução do desafio Cloudflare
+- ✅ Extrai o cookie `cf_clearance` válido
+- ✅ Atualiza automaticamente o `.env`
+
+**Importante:** Este cookie dura apenas 24-48h. Se a execução falhar novamente, execute o script outra vez.
+
+### Opção 3: Variáveis de Ambiente
+
+1. Copie o arquivo de exemplo:
 
 ```bash
 # Windows
@@ -93,359 +105,242 @@ copy .env.example .env
 cp .env.example .env
 ```
 
-2. Edit the `.env` file with your credentials:
+2. Edite `.env` e adicione seu token:
 
 ```env
-EPIC_EMAIL=your_email@example.com
-EPIC_PASSWORD=your_password_here
+EPIC_EG1=eg1~seu_token_aqui
 ```
 
-### Step 2: Optional Settings
+### Opção 4: Device Auth (Automático)
 
-```env
-# Headless mode (true = no visible browser window)
-HEADLESS=true
-
-# Timeout in milliseconds
-TIMEOUT=30000
-
-# Log base directory
-LOG_BASE_DIR=C:/IA/Epic Games
-
-# Data directory
-DATA_DIR=./data
-```
-
-### 📝 Configuration Notes
-
-#### 🔐 Two-Factor Authentication (2FA)
-
-If your account uses 2FA:
-
-1. Set `HEADLESS=false` for the first run
-2. The script will open a visible browser window
-3. Complete the 2FA prompt manually when asked
-4. The script will continue automatically after verification
-
-#### 🤖 CAPTCHA
-
-If a CAPTCHA appears:
-
-1. The script will detect it automatically
-2. Solve the CAPTCHA manually in the browser window
-3. The script will continue after the CAPTCHA is solved
-
-#### 🐧 Linux Users
-
-Adjust the log path for Linux:
-
-```env
-LOG_BASE_DIR=/home/your_user/IA/Epic Games
-```
-
-## 🚀 Usage
-
-### Manual Run
+Na primeira execução sem token, o script abrirá o navegador para autorização:
 
 ```bash
-# Activate the virtual environment (if created)
-# Windows: venv\Scripts\activate
-# Linux/macOS: source venv/bin/activate
-
-# Run the script
-python epic_games_claimer.py
+python main.py
+# Siga as instruções na tela
 ```
 
-### Expected Output
+### 📂 Perfil do Chrome
 
-```
-================================================================================
-Epic Games Claimer - New Run
-================================================================================
-✓ Configuration loaded (Headless: True, Timeout: 30000ms)
-🔍 Querying API for free game information...
-✓ Information saved to: ./data/next_games.json
-📌 Current free games found: 2
-   - Example Game 1
-   - Example Game 2
-🌐 Launching browser...
-✓ Browser started successfully
-🔐 Beginning login process...
-✓ Login successful!
-🎮 Searching for free games available...
-✓ Total free games found: 2
-🎁 Attempting to claim: Example Game 1
-   ✅ Game successfully added: Example Game 1
-================================================================================
-📊 RUN SUMMARY
-================================================================================
-✅ Games processed successfully: 2
-   - Example Game 1
-   - Example Game 2
-================================================================================
-✓ Run completed!
+O claimer pode extrair cookies automaticamente do Chrome. Por padrão, ele usa o perfil `Profile negao`. Se esse perfil não existir, ele usa `Default`.
+
+**Para usar um perfil diferente**, defina no `.env`:
+
+```env
+# Nome da pasta do perfil do Chrome
+CHROME_PROFILE=Profile 1
 ```
 
-## ⏰ Scheduling
+**Para descobrir o nome do seu perfil:**
+1. Abra Chrome e digite `chrome://version`
+2. Procure "Caminho do perfil" (ex: `...\User Data\Profile 1`)
+3. O nome do perfil é a última pasta (`Profile 1`)
 
-### Windows - Task Scheduler
+**Onde os cookies/sessões são salvos:**
+- A sessão é salva em `data/session.json`
+- Cookies são lidos do Chrome (não modificados)
+- Para renovar, basta fazer login no Chrome e reexecutar
 
-#### Option 1: GUI
+## 🚀 Como Usar
 
-1. Open **Task Scheduler**
-2. Click **"Create Basic Task"**
-3. Configure:
-   - **Name**: Epic Games Claimer
-   - **Trigger**: Daily at 12:00 (time Epic usually updates free games)
-   - **Action**: Start a program
-   - **Program**: `C:\path\to\venv\Scripts\python.exe`
-   - **Arguments**: `C:\path\to\epic_games_claimer.py`
-   - **Start in**: `C:\path\to\project`
+### Comandos Disponíveis
 
-#### Option 2: Command Line
+```bash
+# Executar uma vez (resgatar jogos grátis)
+python main.py
+
+# Modo agendado (verifica às 12:00 diariamente)
+python main.py --schedule
+
+# Apenas verificar jogos disponíveis (sem resgatar)
+python main.py --check
+
+# Ver status do agendamento
+python main.py --status
+
+# Configurar horário personalizado
+python main.py --schedule --hour 18 --minute 30
+
+# Ajuda
+python main.py --help
+```
+
+### Exemplo de Saída
+
+```
+======================================================================
+  🎮 EPIC GAMES CLAIMER
+======================================================================
+ℹ️  Iniciando execução: 2025-12-15 12:00:00
+
+──────────────────────────────────────────────────────────
+  🔐 AUTENTICAÇÃO
+──────────────────────────────────────────────────────────
+✅ Sessão válida para: SeuNome [expires_in=5.2h]
+
+──────────────────────────────────────────────────────────
+  🎮 BUSCANDO JOGOS GRÁTIS
+──────────────────────────────────────────────────────────
+✅ Found 2 free games available now
+🎮 Free game available: Jogo 1 [id=abc123...]
+🎮 Free game available: Jogo 2 [id=def456...]
+✅ 2 jogo(s) disponível(is) para resgate
+
+──────────────────────────────────────────────────────────
+  🎁 RESGATANDO JOGOS
+──────────────────────────────────────────────────────────
+🎮 Attempting to claim: Jogo 1 [offer_id=abc123...]
+✅ Game claimed: Jogo 1
+🎮 Attempting to claim: Jogo 2 [offer_id=def456...]
+✅ Game claimed: Jogo 2
+
+──────────────────────────────────────────────────────────
+  📊 RESUMO DA EXECUÇÃO
+──────────────────────────────────────────────────────────
+   ✅ Resgatados:   2
+   📦 Já possuídos: 0
+   ❌ Falhas:       0
+──────────────────────────────────────────────────────────
+```
+
+## ⏰ Agendamento Automático
+
+### Scheduler Interno (Recomendado)
+
+O projeto inclui um scheduler que roda continuamente:
+
+```bash
+# Inicia o scheduler (roda às 12:00 por padrão)
+python main.py --schedule
+
+# Personalizar horário (exemplo: 18:30)
+python main.py --schedule --hour 18 --minute 30
+```
+
+O scheduler:
+- ✅ Executa imediatamente ao iniciar
+- ✅ Calcula próxima execução às 12:00 (ou horário configurado)
+- ✅ Roda em loop até ser interrompido (Ctrl+C)
+- ✅ Logs detalhados de cada execução
+
+### Variáveis de Ambiente
+
+Configure no `.env`:
+
+```env
+# Horário do agendamento (padrão: 12:00)
+SCHEDULE_HOUR=12
+SCHEDULE_MINUTE=0
+```
+
+### Task Scheduler (Windows) - Alternativa
+
+Se preferir agendamento externo:
 
 ```powershell
-# Create a .bat file
-echo @echo off > run_claimer.bat
-echo cd /d C:\path\to\epic_games_claimer >> run_claimer.bat
-echo venv\Scripts\python.exe epic_games_claimer.py >> run_claimer.bat
-
-# Schedule with schtasks
-schtasks /create /tn "Epic Games Claimer" /tr "C:\path\to\run_claimer.bat" /sc daily /st 12:00
+# Criar tarefa agendada
+schtasks /create /tn "Epic Games Claimer" /tr "C:\caminho\scripts\run.bat" /sc daily /st 12:00
 ```
 
-### Linux/macOS - Cron
-
-1. Open crontab:
+### Cron (Linux/macOS) - Alternativa
 
 ```bash
+# Abrir crontab
 crontab -e
+
+# Adicionar linha (executa às 12:00 diariamente)
+0 12 * * * cd /caminho/Epic-Games-Claimer && .venv/bin/python main.py
 ```
 
-2. Add the line (runs daily at 12:00):
-
-```bash
-0 12 * * * cd /path/to/epic_games_claimer && /path/to/venv/bin/python epic_games_claimer.py
-```
-
-3. Save and close the editor
-
-#### Cron schedule examples
-
-```bash
-# Daily at 12:00
-0 12 * * * command
-
-# Daily at 18:00
-0 18 * * * command
-
-# Every Thursday at 17:00 (the day Epic often releases new free games)
-0 17 * * 4 command
-
-# Twice daily (12:00 and 18:00)
-0 12,18 * * * command
-```
-
-## 📂 Log Structure
-
-### File Organization
+## 📁 Estrutura do Projeto
 
 ```
-C:/IA/Epic Games/
-├── 2025/
-│   ├── 10/
-│   │   ├── 24.txt
-│   │   ├── 25.txt
-│   │   └── 26.txt
-│   └── 11/
-│       └── 01.txt
-└── 2026/
-    └── 01/
-        └── 01.txt
+Epic-Games-Claimer/
+├── main.py                 # CLI principal
+├── requirements.txt        # Dependências Python
+├── .env.example           # Exemplo de configuração
+├── .env                   # Suas configurações (não versionado)
+│
+├── src/                   # Código fonte modular
+│   ├── __init__.py
+│   ├── config.py          # Configuração via ambiente
+│   ├── logger.py          # Sistema de logs
+│   ├── session_store.py   # Persistência de sessão
+│   ├── api.py             # Cliente HTTP Epic Games
+│   ├── claimer.py         # Lógica de resgate
+│   └── scheduler.py       # Agendador interno
+│
+├── scripts/               # Scripts auxiliares
+│   ├── get_cookies.py     # Extrai token do navegador
+│   ├── run.bat            # Executa uma vez (Windows)
+│   ├── run.sh             # Executa uma vez (Unix)
+│   ├── run_scheduled.bat  # Modo agendado (Windows)
+│   └── run_scheduled.sh   # Modo agendado (Unix)
+│
+├── data/                  # Dados persistentes
+│   ├── session.json       # Sessão salva
+│   └── next_games.json    # Info dos jogos
+│
+├── logs/                  # Logs organizados por data
+│   └── 2025/
+│       └── 12/
+│           └── 15.txt
+│
+├── legacy/                # Scripts de debug e arquivos antigos
+│   └── (debug_*.py, scripts antigos, HARs)
+│
+└── docs/                  # Documentação adicional
+    └── http-flow.md
 ```
 
-### Log Contents
+## 🔐 Segurança
 
-Each log file includes:
-
-- ✅ **Timestamps** for each action
-- 🔍 **Detected game information**
-- ✅ **Successes** (games added)
-- ⚠️ **Warnings** (already owned games, CAPTCHA, etc.)
-- ❌ **Errors** (connection failures, timeouts, etc.)
-
-### Data Files
-
-```
-./data/
-└── next_games.json  # Current and upcoming game information
-```
-
-Example `next_games.json`:
-
-```json
-{
-  "currentGames": [
-    {
-      "title": "Current Free Game",
-      "date": "2025-10-24",
-      "publisher": "Publisher"
-    }
-  ],
-  "nextGames": [
-    {
-      "title": "Next Free Game",
-      "date": "2025-10-31",
-      "publisher": "Publisher"
-    }
-  ]
-}
-```
+- ⚠️ **Nunca compartilhe** seu arquivo `.env` ou `session.json`
+- ✅ Adicione ao `.gitignore`:
+  ```
+  .env
+  data/session.json
+  ```
+- 🔑 Tokens do navegador expiram em ~8 horas
+- 🔄 Device auth tokens são renovados automaticamente
 
 ## 🔧 Troubleshooting
 
-### ❌ Problem: "EPIC_EMAIL and EPIC_PASSWORD must be set"
+### ❌ "Token expirado"
 
-**Fix**:
-
-- Ensure a `.env` file exists in the project directory
-- Confirm the variables are set correctly
-- Do not include spaces before or after the `=` sign
-
-### ❌ Problem: "Timeout during login"
-
-**Fixes**:
-
-- Increase `TIMEOUT` in `.env` (e.g. `TIMEOUT=60000`)
-- Verify your internet connection
-- Run with `HEADLESS=false` to observe issues visually
-- Clear browser cache and cookies
-
-### ❌ Problem: CAPTCHA appears frequently
-
-**Fixes**:
-
-- Run with `HEADLESS=false` and solve the CAPTCHA manually
-- Wait a few minutes between runs
-- Avoid running repeatedly in rapid succession
-- Epic may apply rate limits
-
-### ❌ Problem: Two-factor authentication not working
-
-**Fix**:
-
-- Set `HEADLESS=false`
-- Complete the 2FA manually in the browser window
-- The script will wait up to 2 minutes for completion
-
-### ❌ Problem: "No free games found"
-
-**Possible causes**:
-
-- There are no free games available at the moment
-- Epic changed the website structure (script needs an update)
-- Connection or timeout issues
-
-**Fix**:
-
-- Check the Epic Games Store website manually
-- Run with `HEADLESS=false` to inspect the page
-- Check `next_games.json` for upcoming game info
-
-### ❌ Problem: Script won't run via cron/Task Scheduler
-
-**Linux/macOS**:
 ```bash
-# Use absolute paths
-0 12 * * * cd /full/path/epic_games_claimer && /full/path/venv/bin/python /full/path/epic_games_claimer.py >> /tmp/epic_claimer.log 2>&1
+# Gerar novo token
+python scripts/get_cookies.py
 ```
 
-**Windows**:
+### ❌ "Não foi possível autenticar"
 
-- Ensure the scheduled user has the necessary permissions
-- Use absolute paths (not relative)
-- Test the .bat file manually before scheduling
+1. Verifique se `.env` existe e tem credenciais válidas
+2. Delete `data/session.json` para forçar novo login
+3. Execute sem token para usar device auth interativo
 
-### ⚠️ Problem: Account temporarily blocked
+### ❌ "Erro de conexão"
 
-**Fix**:
+- Aumente o timeout no `.env`: `TIMEOUT=60`
+- Verifique sua conexão com internet
 
-- Wait a few hours before trying again
-- Do not run the script repeatedly in a short time window
-- Schedule at reasonable intervals (once per day)
+### ❌ Logs não aparecem
 
-## 🔒 Security
+- Verifique se a pasta `logs/` tem permissão de escrita
+- Configure `LOG_BASE_DIR` no `.env` se necessário
 
-### ⚠️ Important Warnings
+## 📝 Changelog
 
-1. **NEVER share your `.env`** with credentials
-2. **Use strong, unique passwords** for your Epic Games account
-3. **Enable 2FA** on your account for added security
-4. **Do not run on public or shared machines**
+### v2.0.0 (2025-12-15)
+- ✨ Estrutura modular (`src/`)
+- ⏰ Scheduler interno para verificação diária
+- 📊 Logs aprimorados com contexto
+- 🧹 Removido código duplicado
+- 📚 Documentação atualizada
 
-### 📁 .gitignore Example
+### v1.0.0
+- 🎮 Versão inicial HTTP-only
 
-If using git, add these to `.gitignore`:
+## 📄 Licença
 
-```gitignore
-.env
-data/
-*.log
-__pycache__/
-venv/
-```
-
-### 🔐 Best Practices
-
-- ✅ Use a Python virtual environment
-- ✅ Keep dependencies updated
-- ✅ Review logs periodically
-- ✅ Back up your `.env` securely
-- ❌ Do not share credentials
-- ❌ Do not run code from untrusted sources
-
-## 📊 Project Structure
-
-```
-epic_games_claimer/
-├── epic_games_claimer.py    # Main script
-├── .env                      # Configuration (DO NOT commit)
-├── .env.example              # Configuration template
-├── requirements.txt          # Python dependencies
-├── README.md                 # This file
-└── data/                     # Saved data (created automatically)
-    └── next_games.json       # Game information
-```
-
-## 🤝 Contributing
-
-Found a bug or have a suggestion? Feel free to:
-
-1. Open an issue
-2. Submit a pull request
-3. Share improvements
-
-## 📜 License
-
-This project is provided "as-is" for personal use. Use at your own risk.
-
-## ⚠️ Disclaimer
-
-- This project is not affiliated, endorsed, or sponsored by Epic Games
-- Use at your own risk
-- Respect Epic Games' Terms of Service
-- Automation may violate terms in some circumstances
-
-## 📞 Support
-
-For issues or questions:
-
-1. See the [Troubleshooting](#-troubleshooting) section
-2. Check logs at `C:/IA/Epic Games/YYYY/MM/DD.txt`
-3. Run with `HEADLESS=false` for visual debugging
-
----
-
-**Built with ❤️ for the gaming community**
-
-*Enjoy your free games! 🎮*
+MIT License - veja [LICENSE](LICENSE) para detalhes.

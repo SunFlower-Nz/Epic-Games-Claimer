@@ -1,0 +1,45 @@
+# Environment and secrets
+.env
+*.env.local
+
+# Session and authentication (contains tokens!)
+data/session.json
+data/*.json
+!data/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# HAR files (contain sensitive network data)
+*.har
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*~
