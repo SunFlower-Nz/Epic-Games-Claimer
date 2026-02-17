@@ -83,10 +83,10 @@ python main.py --status     # Status
 ```
 Epic-Games-Claimer/
 ├── 📄 main.py                      ← ENTRADA PRINCIPAL
+├── 📄 pyproject.toml               ← Configuração do projeto (Ruff, pytest)
 ├── 📄 README.md                    ← Guia principal
 ├── 📄 QUICKSTART.md                ← 30 segundos
 ├── 📄 CHANGELOG.md                 ← Histórico
-├── 📄 REFACTORING_SUMMARY.md       ← Esta refatoração
 ├── 📄 .env                         ← Sua configuração
 ├── 📄 .env.example                 ← Template
 ├── 📄 requirements.txt             ← Dependências
@@ -100,6 +100,12 @@ Epic-Games-Claimer/
 │   ├── api.py                     (HTTP)
 │   ├── claimer.py                 (orquestração)
 │   └── scheduler.py               (agendador)
+│
+├── 📁 tests/                       ← TESTES
+│   ├── __init__.py
+│   ├── conftest.py                (fixtures pytest)
+│   ├── test_*.py                  (arquivos de teste)
+│   └── artifacts/                 (dumps HTML, saídas)
 │
 ├── 📁 scripts/                     ← HELPERS
 │   ├── get_cookies.py
@@ -118,8 +124,37 @@ Epic-Games-Claimer/
 ├── 📁 logs/                        ← LOGS
 │   └── 2025/12/15.txt
 │
-└── 📁 _old/                        ← ARQUIVOS ANTIGOS
-    └── (9 arquivos descontinuados)
+└── 📁 legacy/                      ← ⚠️ CÓDIGO ANTIGO (read-only)
+    └── (arquivos descontinuados)
+```
+
+## 🧪 Qualidade de Código
+
+### Ferramentas Configuradas
+
+| Ferramenta | Uso |
+|------------|-----|
+| **Ruff** | Linting + Formatação |
+| **pytest** | Testes automatizados |
+| **pytest-cov** | Cobertura de código |
+
+### Comandos de Desenvolvimento
+
+```bash
+# Instalar dependências de dev
+pip install -e ".[dev]"
+
+# Verificar código
+ruff check src/ tests/
+
+# Formatar código
+ruff format src/ tests/
+
+# Rodar testes
+pytest
+
+# Testes com cobertura
+pytest --cov=src
 ```
 
 ## 🚀 Próximos Passos

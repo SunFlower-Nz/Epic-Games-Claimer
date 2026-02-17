@@ -11,6 +11,15 @@ data/*.json
 logs/
 *.log
 
+# Debug artifacts (generated at runtime by Playwright flows)
+debug_*.png
+debug_*.txt
+debug_*.html
+playwright_page_dump.html
+
+# Network captures
+*.har
+
 # Python
 __pycache__/
 *.pyc
@@ -24,22 +33,18 @@ env/
 dist/
 build/
 
-# IDEs
+# Ruff cache
+.ruff_cache/
+
+# Pytest cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor/IDE
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # OS files
-.DS_Store
 Thumbs.db
-desktop.ini
-
-# HAR files (contain sensitive network data)
-*.har
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*~
+.DS_Store

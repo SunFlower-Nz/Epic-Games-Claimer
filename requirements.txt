@@ -17,3 +17,9 @@ cryptography>=41.0.0
 
 # Extração de cookies via browser automation (Chrome 127+)
 playwright>=1.40.0
+
+# Stealth plugin used by Playwright purchase flow
+playwright-stealth>=2.0.0
+
+# Benchmarking system resources
+psutil>=5.9.0

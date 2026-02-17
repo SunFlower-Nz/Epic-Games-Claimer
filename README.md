@@ -257,6 +257,7 @@ crontab -e
 ```
 Epic-Games-Claimer/
 ├── main.py                 # CLI principal
+├── pyproject.toml          # Configuração do projeto e ferramentas
 ├── requirements.txt        # Dependências Python
 ├── .env.example           # Exemplo de configuração
 ├── .env                   # Suas configurações (não versionado)
@@ -269,6 +270,12 @@ Epic-Games-Claimer/
 │   ├── api.py             # Cliente HTTP Epic Games
 │   ├── claimer.py         # Lógica de resgate
 │   └── scheduler.py       # Agendador interno
+│
+├── tests/                 # Suite de testes
+│   ├── __init__.py
+│   ├── conftest.py        # Fixtures do pytest
+│   ├── test_*.py          # Arquivos de teste
+│   └── artifacts/         # Dumps e saídas de teste
 │
 ├── scripts/               # Scripts auxiliares
 │   ├── get_cookies.py     # Extrai token do navegador
@@ -286,11 +293,44 @@ Epic-Games-Claimer/
 │       └── 12/
 │           └── 15.txt
 │
-├── legacy/                # Scripts de debug e arquivos antigos
+├── legacy/                # ⚠️ Código antigo (read-only)
 │   └── (debug_*.py, scripts antigos, HARs)
 │
 └── docs/                  # Documentação adicional
     └── http-flow.md
+```
+
+## 🧪 Desenvolvimento
+
+### Ferramentas de Qualidade
+
+O projeto usa [Ruff](https://docs.astral.sh/ruff/) para linting e formatação:
+
+```bash
+# Instalar dependências de desenvolvimento
+pip install -e ".[dev]"
+
+# Verificar código
+ruff check src/ tests/
+
+# Formatar código
+ruff format src/ tests/
+
+# Corrigir problemas automaticamente
+ruff check --fix src/ tests/
+```
+
+### Executar Testes
+
+```bash
+# Rodar todos os testes
+pytest
+
+# Com cobertura
+pytest --cov=src
+
+# Testes específicos
+pytest tests/test_graphql_methods.py -v
 ```
 
 ## 🔐 Segurança

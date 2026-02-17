@@ -6,11 +6,11 @@
 ║                                                                            ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
-STATUS: ❌ SEU TOKEN EXPIROU EM 15/12 ÀS 02:59 UTC
+STATUS: ❌ SEU TOKEN EXPIROU
 
 Seu token atual:
-  Conta: REDACTED_USERNAME
-  ID: REDACTED_ACCOUNT_ID
+  Conta: <sua_conta>
+  ID: <seu_account_id>
   Status: EXPIRADO (precisa renovar)
 
 ════════════════════════════════════════════════════════════════════════════
