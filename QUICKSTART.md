@@ -1,6 +1,6 @@
-# 🚀 QUICK START - Epic Games Claimer v2.0
+# 🚀 QUICK START — Epic Games Claimer
 
-## ⚡ 30 Segundos
+## ⚡ Instalação Rápida
 
 ```bash
 # 1. Clone e entre na pasta
@@ -9,17 +9,18 @@ cd Epic-Games-Claimer
 
 # 2. Crie ambiente virtual
 python -m venv .venv
-.venv\Scripts\activate  # Windows
-# ou
-source .venv/bin/activate  # Linux/macOS
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # Linux/macOS
 
 # 3. Instale dependências
 pip install -r requirements.txt
 
-# 4. Configure (copie e edite se necessário)
-cp .env.example .env
+# 4. Instale o Playwright
+playwright install chromium
 
-# 5. Execute!
+# 5. Faça login no Chrome (store.epicgames.com)
+
+# 6. Feche o Chrome e execute!
 python main.py
 ```
 
@@ -35,13 +36,16 @@ python main.py
 
 ## 🔑 Autenticação
 
-### Opção 1: Automática (Recomendado)
+### Opção 1: Automática via Chrome (Recomendado)
 ```bash
+# 1. Faça login em store.epicgames.com no Chrome
+# 2. Feche o Chrome
+# 3. Execute:
 python main.py
-# Navegador abrirá automaticamente, faça login
+# O claimer extrairá seus cookies automaticamente via CDP
 ```
 
-### Opção 2: Token do Navegador
+### Opção 2: Token Manual
 ```bash
 # 1. Abra store.epicgames.com no navegador
 # 2. F12 → Application → Cookies → EPIC_EG1
@@ -50,48 +54,36 @@ python scripts/get_cookies.py
 # Cole o token
 ```
 
-### Opção 3: .env (Se souber o token)
-```bash
-# Edit .env
+### Opção 3: .env
+```env
 EPIC_EG1=eg1~seu_token_aqui
 ```
 
-## 📁 Estrutura Importante
+## 📁 Estrutura
 
 ```
-src/          ← Código principal (não edite se novo)
+src/          ← Código principal
 scripts/      ← Helpers
-data/         ← Seu session.json salvo aqui
-logs/         ← Logs por data (logs/2025/12/15.txt)
-legacy/       ← Scripts de debug e arquivos antigos (pode ignorar)
-```
-
-## 🔍 Ver Logs
-
-```bash
-# Último log (hoje)
-cat logs/2025/12/15.txt  # Linux/macOS
-type logs\2025\12\15.txt  # Windows
-
-# Ou abra em editor
+data/         ← session.json salvo aqui (não versionado)
+logs/         ← Logs por data (logs/YYYY/MM/DD.txt)
+docs/         ← Documentação técnica
 ```
 
 ## ⚙️ Configuração
 
-Edite `.env` para personalizar:
+Copie `.env.example` para `.env` e personalize:
 
 ```env
 # Horário do agendamento
 SCHEDULE_HOUR=12
 SCHEDULE_MINUTE=0
 
-# Sua localização
+# Localização
 COUNTRY=BR
 LOCALE=pt-BR
 
-# Perfil do Chrome para extração de cookies (padrão: 'Profile negao')
-# Se não encontrado, usa 'Default'
-CHROME_PROFILE=Profile negao
+# Perfil do Chrome (padrão: Default)
+CHROME_PROFILE=Default
 
 # Timeout de requisições (segundos)
 TIMEOUT=30
@@ -99,28 +91,25 @@ TIMEOUT=30
 
 ## 🐛 Troubleshooting
 
-### "ModuleNotFoundError: No module named 'src'"
+### "Chrome não conecta via CDP"
 ```bash
-# Certifique-se de estar na pasta raiz do projeto
-cd path/to/Epic-Games-Claimer
-python main.py
+# Feche todas as instâncias do Chrome antes de executar
+taskkill /IM chrome.exe /F    # Windows
+killall chrome                 # Linux/macOS
 ```
 
 ### "Token expirado"
 ```bash
-# Gere novo token
-python scripts/get_cookies.py
+# Faça login novamente no Chrome e reexecute
+python main.py
 ```
 
-### "Não consegue conectar"
-```bash
-# Aumente timeout no .env
-TIMEOUT=60
-```
+### "CAPTCHA apareceu"
+Resolva manualmente na janela do Chrome (o claimer aguarda até 5 min).
 
 ## 🎯 Casos de Uso
 
-### Verificar agora
+### Verificar e resgatar agora
 ```bash
 python main.py
 ```
@@ -133,43 +122,29 @@ python main.py --schedule
 ```
 
 ### Agendar no Windows
-```bash
-# Abra Task Scheduler e crie tarefa:
-# Programa: python
-# Argumentos: main.py --schedule
-# Iniciar em: C:\path\to\Epic-Games-Claimer
+```powershell
+schtasks /create /tn "Epic Games Claimer" /tr "python main.py" /sc daily /st 12:00
 ```
 
 ### Agendar no Linux/macOS
 ```bash
 crontab -e
 # Adicione:
-0 12 * * * cd /path/Epic-Games-Claimer && python main.py
+0 12 * * * cd /path/Epic-Games-Claimer && .venv/bin/python main.py
 ```
-
-## 📚 Mais Informações
-
-- `README.md` - Guia completo
-- `docs/ARCHITECTURE.md` - Estrutura técnica
-- `CHANGELOG.md` - Histórico de mudanças
-- `.env.example` - Todas as variáveis disponíveis
 
 ## ✅ Checklist Inicial
 
-- [ ] Clonado o repositório
+- [ ] Repositório clonado
 - [ ] Ambiente virtual criado e ativado
 - [ ] `pip install -r requirements.txt` executado
-- [ ] `.env` configurado (ou deixado padrão)
+- [ ] `playwright install chromium` executado
+- [ ] Login feito no Chrome (store.epicgames.com)
 - [ ] `python main.py` testado com sucesso
-- [ ] Logs aparecem em `logs/`
 
-## 🚀 Próximos Passos
+## 📚 Mais Informações
 
-1. **Primeira execução**: `python main.py` (testa autenticação)
-2. **Modo agendado**: `python main.py --schedule` (deixa rodando)
-3. **Verificar logs**: Abra `logs/2025/12/15.txt`
-4. **Personalizar**: Edite `.env` se necessário
-
----
-
-**Need help?** Cheque a [documentação completa](README.md)
+- [README.md](README.md) — Guia completo
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Estrutura técnica
+- [CHANGELOG.md](CHANGELOG.md) — Histórico de mudanças
+- [.env.example](.env.example) — Todas as variáveis disponíveis

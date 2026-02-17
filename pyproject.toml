@@ -1,7 +1,7 @@
 [project]
 name = "epic-games-claimer"
-version = "2.0.0"
-description = "HTTP-only automation to detect and claim free Epic Games Store titles"
+version = "3.0.0"
+description = "Automation to detect and claim free Epic Games Store titles via Chrome CDP and Playwright"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }

@@ -1,176 +1,147 @@
-# 📂 Estrutura do Projeto - Epic Games Claimer v2.0.0
+# 📂 Arquitetura — Epic Games Claimer v3.0.0
 
 ## 🏗️ Visão Geral
 
+O claimer usa **Chrome real via CDP** (Chrome DevTools Protocol) para acessar a Epic Games Store, injetar cookies de autenticação e resgatar jogos grátis. Quando Chrome real não está disponível, faz fallback para Playwright Chromium.
+
+## 📁 Estrutura
+
 ```
 Epic-Games-Claimer/
-├── main.py                 # ⭐ Ponto de entrada (CLI)
-├── requirements.txt        # Dependências Python
-├── README.md              # Documentação principal
-├── .env.example           # Configuração de exemplo
-├── .env                   # Sua configuração (não versionada)
-├── .gitignore
+├── main.py                     # ⭐ Ponto de entrada (CLI)
+├── pyproject.toml              # Configuração do projeto (Ruff, pytest)
+├── requirements.txt            # Dependências Python
+├── .env.example                # Template de configuração
 │
-├── src/                   # 📦 Código modular (novo)
+├── src/                        # 📦 Código modular
 │   ├── __init__.py
-│   ├── config.py          # Leitura de env vars
-│   ├── logger.py          # Sistema de logs melhorado
-│   ├── session_store.py   # Persistência de sessão
-│   ├── api.py             # Cliente HTTP Epic Games
-│   ├── claimer.py         # Orquestração do resgate
-│   └── scheduler.py       # Agendador interno (12h)
+│   ├── api.py                  # Cliente HTTP + browser claiming
+│   ├── browser.py              # BrowserManager (Chrome CDP + Playwright)
+│   ├── claimer.py              # Orquestração do resgate
+│   ├── models.py               # Constantes, seletores, enums
+│   ├── config.py               # Configuração via variáveis de ambiente
+│   ├── logger.py               # Sistema de logs estruturado
+│   ├── session_store.py        # Persistência de sessão (JWT)
+│   ├── scheduler.py            # Agendador interno
+│   ├── chrome_cookies.py       # Extração de cookies (DPAPI/legacy)
+│   └── playwright_cookies.py   # Login interativo via Playwright
 │
-├── scripts/               # 🔧 Scripts auxiliares
-│   ├── get_cookies.py     # Extrai token do navegador
-│   ├── run.bat            # Executa (Windows)
-│   ├── run.sh             # Executa (Unix)
-│   ├── run_scheduled.bat  # Modo agendado (Windows)
-│   └── run_scheduled.sh   # Modo agendado (Unix)
+├── scripts/                    # 🔧 Scripts auxiliares
+│   ├── get_cookies.py          # Extrai token do navegador
+│   ├── login.py                # Login interativo
+│   ├── benchmark.py            # Benchmarks de performance
+│   ├── run.bat / run.sh        # Executa uma vez
+│   └── run_scheduled.*         # Modo agendado
 │
-├── data/                  # 💾 Dados persistentes
-│   ├── session.json       # Sessão salva (não versionada)
-│   ├── next_games.json    # Info dos jogos
-│   └── .gitkeep
+├── tests/                      # 🧪 Suite de testes
+│   ├── conftest.py             # Fixtures do pytest
+│   └── test_*.py               # Arquivos de teste
 │
-├── logs/                  # 📝 Logs organizados
-│   └── YYYY/MM/DD.txt
+├── data/                       # 💾 Dados persistentes (não versionado)
+│   ├── session.json            # Sessão salva
+│   └── next_games.json         # Info dos jogos
 │
-├── docs/                  # 📚 Documentação
-│   └── http-flow.md       # Fluxo de requisições HTTP
+├── logs/                       # 📝 Logs organizados
+│   ├── YYYY/MM/DD.txt          # Logs por data
+│   └── debug/                  # Screenshots e dumps HTML
 │
-├── _old/                  # 📦 Arquivos descontinuados
-│   └── README.md          # Explicação dos antigos
-│
-└── .venv/                 # 🐍 Ambiente virtual (não versionado)
+└── docs/                       # 📚 Documentação
+    ├── ARCHITECTURE.md
+    ├── SECURITY.md
+    ├── RENEW_TOKEN.md
+    └── http-flow.md
 ```
 
 ## 📖 Descrição dos Módulos
 
-### `src/config.py`
-- **Responsabilidade**: Ler variáveis de ambiente
-- **Exporta**: `Config` (dataclass com todas as configurações)
-- **Usa**: `python-dotenv`
-- **Produz**: Objeto de configuração centralizado
+### `src/browser.py` — BrowserManager
+- **Responsabilidade**: Gerenciar conexão com browser (Chrome CDP ou Playwright Chromium)
+- **Fluxo Chrome CDP**:
+  1. Fecha Chrome existente (`taskkill`)
+  2. Copia perfil do Chrome para diretório temporário (Chrome recusa CDP no diretório padrão)
+  3. Lança Chrome com `--remote-debugging-port=9222`
+  4. Conecta via Playwright `connect_over_cdp()`
+  5. Injeta cookies (EPIC_EG1, cf_clearance) no contexto via `context.add_cookies()`
+- **Fallback**: Se Chrome real não disponível, usa Playwright Chromium com `playwright-stealth`
 
-### `src/logger.py`
-- **Responsabilidade**: Logging estruturado e contextualizado
-- **Exporta**: `Logger` (wrapper do logging.Logger)
-- **Recursos**:
-  - Logs no console (INFO+) e arquivo (DEBUG+)
-  - Organização por data: `logs/YYYY/MM/DD.txt`
-  - Métodos de conveniência: `.success()`, `.game()`, `.auth()`, etc.
-  - Suporte a contexto: `logger.success("Msg", account_id="xyz")`
+### `src/api.py` — EpicAPI
+- **Responsabilidade**: Cliente HTTP para APIs Epic Games + automação de browser para claiming
+- **Endpoints HTTP**: OAuth, GraphQL (catálogo), Entitlements, Order
+- **Browser Claiming** (`_claim_via_playwright`):
+  1. Navega para a página do produto
+  2. Trata age gate (jogos 18+)
+  3. Clica no botão de claim ("Obter" / "Get")
+  4. Clica "Place Order" no checkout
+  5. Monitora CAPTCHA e resultado
+- **Verificação**: Usa namespace matching (offer ID ≠ catalogItemId nos entitlements)
 
-### `src/session_store.py`
-- **Responsabilidade**: Persistência de sessão de autenticação
-- **Exporta**: `Session` (dataclass), `SessionStore` (gerenciador)
-- **Recursos**:
-  - Carregar/salvar sessão em `data/session.json`
-  - Conversão de formato legado (Playwright)
-  - Decodificação de JWT do token `eg1~...`
-  - Validação e cálculo de expiração
-
-### `src/api.py`
-- **Responsabilidade**: Cliente HTTP para APIs Epic Games
-- **Exporta**: `EpicAPI` (todas as chamadas HTTP)
-- **Endpoints**:
-  - OAuth (device auth, token refresh, verify)
-  - Catalog (GraphQL - free games)
-  - Entitlements (jogos que você já possui)
-  - Order (claim/resgate)
-- **Recursos**:
-  - Logging detalhado de requests/responses
-  - Tratamento de erros por status code
-  - Retry automático com backoff
-
-### `src/claimer.py`
-- **Responsabilidade**: Orquestração do fluxo de resgate
-- **Exporta**: `EpicGamesClaimer` (orquestrador), `ClaimResult` (resultado)
+### `src/claimer.py` — EpicGamesClaimer
+- **Responsabilidade**: Orquestração do fluxo completo
 - **Fluxo**:
-  1. Autenticar (session salva → refresh → fallback → device auth)
+  1. Autenticar (session salva → cookie do Chrome → Playwright login)
   2. Buscar jogos grátis disponíveis
-  3. Filtrar jogos já possuídos
-  4. Resgatar cada jogo
-  5. Salvar informações e logs
+  3. Filtrar jogos já possuídos (por namespace)
+  4. Resgatar cada jogo via browser
+  5. Salvar resultados e logs
 
-### `src/scheduler.py`
-- **Responsabilidade**: Agendamento automático (12:00 diariamente)
-- **Exporta**: `Scheduler` (agendador)
-- **Recursos**:
-  - Calcula próximo tempo de execução
-  - Loop contínuo com sleep inteligente
-  - Graceful shutdown (Ctrl+C)
-  - Logging de eventos de agendamento
+### `src/models.py` — Modelos e Constantes
+- **Exporta**: `ClaimStatus` (enum), `EpicCookies` (dataclass)
+- **Constantes**: `CLAIM_BUTTON_SELECTORS`, `CHECKOUT_SELECTORS`, `CAPTCHA_KEYWORDS`, `SUCCESS_PATTERNS`, `ALREADY_OWNED_PATTERNS`
+- **IDs**: Client IDs da Epic (EGL, Diesel Web)
 
-### `main.py`
-- **Responsabilidade**: Interface CLI
-- **Comandos**:
-  - `python main.py` - Executa uma vez
-  - `python main.py --schedule` - Modo agendado
-  - `python main.py --check` - Só verifica
-  - `python main.py --status` - Status do agendador
-  - `python main.py --help` - Ajuda
+### `src/config.py` — Config
+- **Responsabilidade**: Ler variáveis de ambiente via `python-dotenv`
+- **Configurações**: Paths, auth, scheduler, browser (CDP port, Chrome profile), locale, timeouts
+
+### `src/session_store.py` — SessionStore
+- **Responsabilidade**: Persistência de sessão de autenticação
+- **Recursos**: Decodificação JWT de tokens `eg1~`, cálculo de expiração, conversão de formatos
+
+### `src/logger.py` — Logger
+- **Responsabilidade**: Logging estruturado (console + arquivo)
+- **Organização**: `logs/YYYY/MM/DD.txt`
+- **Métodos**: `.success()`, `.game()`, `.auth()`, `.separator()`
+
+### `src/scheduler.py` — Scheduler
+- **Responsabilidade**: Execução periódica (padrão: 12:00 diariamente)
+- **Recursos**: Loop contínuo, graceful shutdown (Ctrl+C), cálculo de próxima execução
+
+### `src/chrome_cookies.py` — ChromeCookieExtractor
+- **Responsabilidade**: Extrair cookies do Chrome via DPAPI (Windows, Chrome < 127)
+- **Status**: Legacy — Chrome 127+ usa App-Bound Encryption, tornando DPAPI insuficiente
+
+### `src/playwright_cookies.py` — PlaywrightCookieExtractor
+- **Responsabilidade**: Login interativo via Playwright para obter cookies frescos
+- **Uso**: Fallback quando sessão inválida e Chrome cookies não disponíveis
 
 ## 🔄 Fluxo de Dados
 
 ```
 main.py (CLI)
     ↓
-Config (ler .env)
-Logger (setup logs)
+Config (.env) + Logger (setup)
     ↓
 EpicGamesClaimer
-    ├── EpicAPI (HTTP requests)
-    ├── SessionStore (JWT decode, persist)
+    ├── SessionStore (carregar sessão)
+    ├── EpicAPI
+    │   ├── HTTP: verificar token, buscar jogos, entitlements
+    │   └── Browser: BrowserManager → Chrome CDP → claim
     └── Scheduler (se --schedule)
         ↓
-    Autentica → Busca jogos → Resgata → Logs
+    Autenticar → Buscar jogos → Filtrar → Resgatar → Verificar → Logs
 ```
 
-## 📋 Checklist de Funções
+## 🧪 Qualidade de Código
 
-| Função | Módulo | Status |
-|--------|--------|--------|
-| Autenticação device auth | `api.py` | ✅ |
-| Token refresh | `api.py` | ✅ |
-| Buscar jogos grátis (GraphQL) | `api.py` | ✅ |
-| Verificar posse (entitlements) | `api.py` | ✅ |
-| Resgatar jogo | `api.py` | ✅ |
-| Persistir sessão | `session_store.py` | ✅ |
-| Logs estruturados | `logger.py` | ✅ |
-| Agendamento interno | `scheduler.py` | ✅ |
-| CLI com comandos | `main.py` | ✅ |
+| Ferramenta | Uso |
+|------------|-----|
+| **Ruff** | Linting + Formatação |
+| **pytest** | Testes automatizados |
+| **pytest-cov** | Cobertura de código |
 
-## 🧹 Limpeza Realizada (v2.0)
-
-### ❌ Removido (movido para `_old/`)
-- `epic_games_claimer.py` (monolítico, 1.2k linhas)
-- `epic_games_claimer_backup.py` (backup desnecessário)
-- `epic_games_logger.py` (substituído por aprimorado)
-- `get_cookies.py` (movido para `scripts/`)
-- `run.bat` / `run.sh` (movidos para `scripts/`)
-- `install.bat` / `install.sh` (obsoletos)
-- `*.har` (debug files)
-
-### ✅ Mantido
-- `.env.example` (template importante)
-- `requirements.txt` (dependências)
-- `README.md` (documentação)
-- `docs/` (fluxos técnicos)
-- `.git/` (histórico)
-
-## 🚀 Próximas Melhorias
-
-1. **Testes unitários** em `tests/`
-2. **CI/CD** (GitHub Actions)
-3. **Docker** para deploy
-4. **Notificações** (Discord/Telegram)
-5. **Dashboard** (web UI)
-
-## 📝 Convenções
-
-- **Imports**: Agrupados (stdlib, 3rd party, local)
-- **Type hints**: Todas as funções anotadas
-- **Docstrings**: Em todas as classes e funções públicas
-- **Logs**: Contexto em chave=valor
-- **Erros**: Capturados com detalhes e stack trace em DEBUG
+```bash
+pip install -e ".[dev]"
+ruff check src/ tests/
+ruff format src/ tests/
+pytest --cov=src
+```

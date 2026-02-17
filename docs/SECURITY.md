@@ -1,164 +1,113 @@
-# 🔐 GUIA DE SEGURANÇA - Epic Games Claimer
+# 🔐 Guia de Segurança — Epic Games Claimer
 
-## Resumo Executivo
+## Resumo
 
-O Epic Games Claimer foi desenvolvido com segurança em mente. Este documento descreve práticas de segurança implementadas e recomendações para os usuários.
+O Epic Games Claimer foi desenvolvido com segurança em mente. Nenhuma senha é solicitada ou armazenada.
 
-**Status Geral:** ✅ **Relativamente Seguro**
+**Status:** ✅ Seguro para uso local
 
 ---
 
-## 🛡️ Práticas de Segurança Implementadas
+## 🛡️ Práticas Implementadas
 
 ### 1. Autenticação sem Senhas
-- ✅ **Nenhuma senha é solicitada ou armazenada**
-- ✅ Usa exclusivamente tokens OAuth
-- ✅ Fallback para Device Auth Flow (navegador interativo)
+- ✅ Usa exclusivamente tokens OAuth (EPIC_EG1)
+- ✅ Tokens extraídos do Chrome via CDP (local, sem envio a terceiros)
+- ✅ Fallback para login interativo via Playwright
 
 ### 2. Proteção de Dados Sensíveis
-- ✅ **Credenciais não são hardcoded** (removidas de config.py)
-- ✅ **session.json ignorado pelo Git** (.gitignore configurado)
-- ✅ **Tokens mascarados em logs** (apenas primeiros 8 caracteres)
-- ✅ **Nenhum header Authorization logado**
+- ✅ Credenciais não são hardcoded no código
+- ✅ `data/session.json` ignorado pelo Git
+- ✅ `.env` ignorado pelo Git
+- ✅ Tokens mascarados em logs (apenas primeiros 8 caracteres)
+- ✅ Nenhum header Authorization logado em texto completo
+- ✅ Histórico do git limpo (dados pessoais removidos via `git-filter-repo`)
 
-### 3. Endpoints Seguros
-- ✅ **Apenas endpoints oficiais da Epic Games** (`*.epicgames.com`)
-- ✅ **Validação de certificado SSL** em todas as requisições
-- ✅ **API externa validada** (freegamesepic.onrender.com com structure checks)
+### 3. Chrome CDP
+- ✅ Conexão via localhost (127.0.0.1:9222) — sem exposição de rede
+- ✅ Perfil do Chrome copiado para diretório temporário (original não modificado)
+- ✅ Chrome fechado automaticamente após uso
+- ✅ Cookies injetados no contexto do browser (não salvos em disco)
 
-### 4. Armazenamento Local
-- ✅ **session.json protegido por permissões do Windows**
-- ✅ **Tokens renovados automaticamente** (refresh token)
-- ✅ **Logs organizados por data** (fácil auditoria)
+### 4. Endpoints Seguros
+- ✅ Apenas endpoints oficiais da Epic Games (`*.epicgames.com`)
+- ✅ Validação de certificado SSL em todas as requisições
+- ✅ API externa de fallback (`freegamesepic.onrender.com`) com validação de resposta
 
-### 5. Logging Estruturado
-- ✅ **Logs em arquivo + console** para rastreabilidade
-- ✅ **Nenhum token completo em logs**
-- ✅ **Contexto e stacktraces detalhados** para debugging
-- ✅ **Emojis para scanning visual rápido**
+### 5. Armazenamento Local
+- ✅ `session.json` protegido por permissões do sistema
+- ✅ Logs organizados por data para fácil auditoria
+- ✅ Debug dumps salvos apenas em `logs/debug/` (ignorado pelo Git)
 
 ---
 
-## ⚠️ Riscos Conhecidos e Mitigações
+## ⚠️ Riscos e Mitigações
 
-### Risco 1: API Externa (freegamesepic.onrender.com)
-**Severidade:** 🟡 Média  
-**Mitigação:**
-- ✅ Validação de estrutura de resposta (isDict, isList)
-- ✅ HTTPS obrigatório com validação de certificado
-- ✅ Usado apenas como fallback (não crítico)
+### Risco 1: session.json em Texto Claro
+**Severidade:** 🟡 Média
+- ✅ Arquivo ignorado pelo Git
+- ✅ Permissões locais do sistema operacional
+- ⚠️ Não sincronize em nuvem sem criptografia
+
+### Risco 2: Chrome CDP Expõe Porta
+**Severidade:** 🟢 Baixo
+- ✅ Porta 9222 escuta apenas em localhost
+- ✅ Chrome fechado após cada execução
+- ✅ Perfil copiado (original intacto)
+
+### Risco 3: API Externa
+**Severidade:** 🟢 Baixo
+- ✅ Usada apenas como fallback para listar jogos grátis
 - ✅ Nenhum dado sensível enviado
-
-**Recomendação:** Manter como fallback apenas. Se offline, claimer falha gracefully.
-
-### Risco 2: session.json em Texto Claro
-**Severidade:** 🟡 Média  
-**Mitigação:**
-- ✅ Arquivo ignorado pelo Git (não versionado)
-- ✅ Permissões locais do Windows (apenas usuário atual)
-- ✅ Arquivo local, não sincronizado em nuvem por padrão
-
-**Recomendação:** Usar Windows DPAPI para encriptar (possível em versão futura).
-
-### Risco 3: Cookies do Chrome
-**Severidade:** 🟢 Baixo  
-**Mitigação:**
-- ✅ Extração local via DPAPI ou Playwright (sem envio para terceiros)
-- ✅ Cookies lidos apenas, nunca modificados
-- ✅ Chrome deve estar fechado para DPAPI (evita interferência)
-
-**Recomendação:** Manter prática atual. DPAPI é seguro para ambiente local.
+- ✅ HTTPS com validação de certificado
 
 ---
 
-## 🔑 Como Gerenciar Credenciais
+## 📋 Checklist para Usuários
 
-### Opção 1: Deixar Vazio (Recomendado)
-```env
-# .env
-EPIC_CLIENT_ID=
-EPIC_CLIENT_SECRET=
-```
-→ Usa credenciais públicas padrão da Epic Games (seguro)
+- [ ] `.env` nunca versionado (verifique `.gitignore`)
+- [ ] `data/session.json` nunca compartilhado
+- [ ] Permissões de pasta restritas ao seu usuário
+- [ ] Logs não contêm tokens completos
+- [ ] Token do navegador não commitado no Git
 
-### Opção 2: Token do Navegador
+---
+
+## 🔑 Gerenciamento de Credenciais
+
+### Recomendado: Chrome Automático
 ```bash
-python scripts/get_cookies.py
-# Será convertido em session.json
+# Faça login no Chrome → Feche → Execute
+python main.py
 ```
-→ Mais seguro que hardcoding
+Cookies extraídos localmente, sem configuração manual.
 
-### Opção 3: Credenciais Customizadas
-Se você obteve suas próprias credenciais:
+### Alternativa: .env
 ```env
-EPIC_CLIENT_ID=seu_id
-EPIC_CLIENT_SECRET=seu_secret
+EPIC_EG1=eg1~seu_token_aqui
 ```
-→ Nunca commit isso em Git. Use `.env` (ignorado).
+Nunca faça commit deste arquivo.
 
 ---
 
-## 📋 Checklist de Segurança para Usuários
+## 🔍 Auditoria
 
-- [ ] **`.env` NUNCA é versionado** (verifique `.gitignore`)
-- [ ] **`session.json` NUNCA é compartilhado**
-- [ ] **Permissões de pasta** restritas (apenas seu usuário)
-- [ ] **Chrome fechado ao executar** (para DPAPI)
-- [ ] **Logs contêm informações públicas apenas** (verifique antes de compartilhar)
-- [ ] **Token do navegador não é commitado** (use `.env` ou scripts)
-
----
-
-## 🔍 Auditoria e Monitoramento
-
-### Logs para Revisar
+### Logs
 ```
-logs/YYYY/MM/DD.txt
+logs/YYYY/MM/DD.txt   # Operações do dia
+logs/debug/           # Screenshots e dumps HTML (debug)
 ```
 
-**O que procurar:**
-- ✅ Tokens sempre mascarados (`eg1~...`)
-- ✅ Nenhuma senha ou PIN
-- ✅ Apenas URLs (sem query strings sensíveis)
-- ✅ Status HTTP e timestamps
-
-**Vermelho (não deve aparecer):**
+**Verificar que NÃO contêm:**
 - ❌ Token completo
 - ❌ Bearer token decodificado
-- ❌ Cookie valores completos
-- ❌ Account password
+- ❌ Valores de cookies completos
 
-### Verificar Permissões
+### Permissões (Windows)
 ```powershell
-# Ver proprietário de session.json
-(Get-Item data/session.json).Owner
-
-# Ver permissões
-icacls data/session.json
+icacls data\session.json
 ```
 
 ---
 
-## 🚨 Reportar Vulnerabilidades
-
-Se encontrar um problema de segurança:
-1. **NÃO** abra issue pública
-2. Entre em contato via email (proprietário do repositório)
-3. Descreva:
-   - Tipo de vulnerabilidade
-   - Como reproduzir
-   - Impacto potencial
-
----
-
-## 📚 Referências Externas
-
-- [OAuth 2.0 Device Authorization Grant](https://tools.ietf.org/html/draft-ietf-oauth-device-flow)
-- [OWASP: Credential Storage](https://cheatsheetseries.owasp.org/cheatsheets/Credential_Storage_Cheat_Sheet.html)
-- [Windows DPAPI](https://docs.microsoft.com/en-us/windows/win32/seccng/data-protection-api)
-- [Epic Games API Docs](https://docs.unrealengine.com/en-US/API/web-api/getting-started/)
-
----
-
-**Última atualização:** 15 de Dezembro de 2025  
-**Status:** ✅ Auditado e Seguro
+**Última atualização:** Fevereiro 2026

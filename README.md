@@ -1,6 +1,6 @@
 # 🎮 Epic Games Claimer
 
-Automatize a coleta de jogos grátis da Epic Games Store com requisições HTTP puras - sem navegador, sem UI!
+Automatize a coleta de jogos grátis da Epic Games Store usando Chrome real via CDP + Playwright.
 
 ## 📋 Índice
 
@@ -15,25 +15,28 @@ Automatize a coleta de jogos grátis da Epic Games Store com requisições HTTP 
 
 ## 🎯 Descrição
 
-Este projeto automatiza completamente o processo de coleta de jogos grátis da Epic Games Store usando **apenas requisições HTTP**:
+Este projeto automatiza completamente o processo de coleta de jogos grátis da Epic Games Store:
 
-- ✅ Autentica via token do navegador ou device auth
-- ✅ Detecta jogos grátis via API GraphQL oficial
-- ✅ Adiciona os jogos à sua biblioteca automaticamente
+- ✅ Usa **Chrome real** via CDP (Chrome DevTools Protocol) para bypass de Cloudflare
+- ✅ Injeta cookies de autenticação automaticamente no browser
+- ✅ Detecta jogos grátis via API oficial da Epic
+- ✅ Adiciona os jogos à sua biblioteca automaticamente (inclusive 18+)
 - ✅ Gera logs detalhados organizados por data
-- ✅ **Agendamento interno** - verifica diariamente às 12:00
+- ✅ **Agendamento interno** — verifica diariamente às 12:00
 
 ## ✨ Funcionalidades
 
 | Recurso | Descrição |
 |---------|-----------|
-| 🌐 **100% HTTP** | Sem browser, sem UI, sem Playwright/Selenium |
-| 🔑 **Múltiplas autenticações** | Token do browser, device auth, ou .env |
+| 🌐 **Chrome CDP** | Usa seu Chrome real com perfil copiado via DevTools Protocol |
+| 🔑 **Cookie injection** | Injeta EPIC_EG1 automaticamente (bypass App-Bound Encryption) |
+| 🛡️ **Bypass Cloudflare** | Chrome real evita bloqueios de bot |
+| 🎂 **Age Gate** | Preenche data de nascimento automaticamente para jogos 18+ |
 | ⏰ **Scheduler interno** | Executa automaticamente às 12:00 diariamente |
 | 💾 **Persistência de sessão** | Token salvo para próximas execuções |
 | 📊 **Logs detalhados** | Organizados em `logs/YYYY/MM/DD.txt` |
 | 🔄 **Renovação automática** | Detecta e renova tokens expirados |
-| ⚡ **Leve e rápido** | Execução em segundos, ~2MB de dependências |
+| 🧩 **Fallback Chromium** | Se Chrome real não disponível, usa Playwright Chromium |
 
 ## 🔧 Instalação
 
@@ -62,72 +65,57 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### 4. Instale o Playwright
+
+```bash
+playwright install chromium
+```
+
 ## ⚙️ Configuração
 
-### Opção 1: Token do Navegador (Recomendado)
+### Opção 1: Automática via Chrome (Recomendado)
 
-1. Abra https://store.epicgames.com e faça login
-2. Pressione `F12` → **Application** → **Cookies** → `store.epicgames.com`
-3. Copie o valor do cookie `EPIC_EG1` (começa com `eg1~...`)
-4. Execute o script helper:
+O claimer extrai cookies automaticamente do seu Chrome instalado:
 
-```bash
-python scripts/get_cookies.py
-# Cole o token quando solicitado
-```
-
-### Opção 2: CF_CLEARANCE via Playwright (Automático)
-
-Se você receber erro `GraphQL request blocked` (Cloudflare), use:
-
-```bash
-python get_cf_clearance.py
-```
-
-Este script:
-- ✅ Abre um navegador automaticamente  
-- ✅ Você faz login normalmente
-- ✅ Aguarda resolução do desafio Cloudflare
-- ✅ Extrai o cookie `cf_clearance` válido
-- ✅ Atualiza automaticamente o `.env`
-
-**Importante:** Este cookie dura apenas 24-48h. Se a execução falhar novamente, execute o script outra vez.
-
-### Opção 3: Variáveis de Ambiente
-
-1. Copie o arquivo de exemplo:
-
-```bash
-# Windows
-copy .env.example .env
-
-# Linux/macOS
-cp .env.example .env
-```
-
-2. Edite `.env` e adicione seu token:
-
-```env
-EPIC_EG1=eg1~seu_token_aqui
-```
-
-### Opção 4: Device Auth (Automático)
-
-Na primeira execução sem token, o script abrirá o navegador para autorização:
+1. Abra https://store.epicgames.com no Chrome e faça login
+2. Execute o claimer — ele copiará seu perfil para automação via CDP
 
 ```bash
 python main.py
-# Siga as instruções na tela
+```
+
+> **Nota:** O Chrome precisa estar **fechado** antes de executar, pois o claimer lança uma instância com CDP.
+
+### Opção 2: Token Manual via Script
+
+```bash
+python scripts/get_cookies.py
+# Cole o token EPIC_EG1 quando solicitado
+```
+
+Para obter o token:
+1. Abra https://store.epicgames.com e faça login
+2. Pressione `F12` → **Application** → **Cookies** → `store.epicgames.com`
+3. Copie o valor do cookie `EPIC_EG1` (começa com `eg1~...`)
+
+### Opção 3: Variáveis de Ambiente
+
+```bash
+# Copie o template
+cp .env.example .env  # Linux/macOS
+copy .env.example .env  # Windows
+
+# Edite e adicione seu token
+EPIC_EG1=eg1~seu_token_aqui
 ```
 
 ### 📂 Perfil do Chrome
 
-O claimer pode extrair cookies automaticamente do Chrome. Por padrão, ele usa o perfil `Profile negao`. Se esse perfil não existir, ele usa `Default`.
+O claimer copia o perfil do Chrome para um diretório temporário e lança com CDP. Por padrão usa o perfil `Default`.
 
 **Para usar um perfil diferente**, defina no `.env`:
 
 ```env
-# Nome da pasta do perfil do Chrome
 CHROME_PROFILE=Profile 1
 ```
 
@@ -135,11 +123,6 @@ CHROME_PROFILE=Profile 1
 1. Abra Chrome e digite `chrome://version`
 2. Procure "Caminho do perfil" (ex: `...\User Data\Profile 1`)
 3. O nome do perfil é a última pasta (`Profile 1`)
-
-**Onde os cookies/sessões são salvos:**
-- A sessão é salva em `data/session.json`
-- Cookies são lidos do Chrome (não modificados)
-- Para renovar, basta fazer login no Chrome e reexecutar
 
 ## 🚀 Como Usar
 
@@ -171,27 +154,23 @@ python main.py --help
 ======================================================================
   🎮 EPIC GAMES CLAIMER
 ======================================================================
-ℹ️  Iniciando execução: 2025-12-15 12:00:00
+ℹ️  Iniciando execução
 
 ──────────────────────────────────────────────────────────
   🔐 AUTENTICAÇÃO
 ──────────────────────────────────────────────────────────
-✅ Sessão válida para: SeuNome [expires_in=5.2h]
+✅ Sessão válida [expires_in=5.2h]
 
 ──────────────────────────────────────────────────────────
   🎮 BUSCANDO JOGOS GRÁTIS
 ──────────────────────────────────────────────────────────
-✅ Found 2 free games available now
-🎮 Free game available: Jogo 1 [id=abc123...]
-🎮 Free game available: Jogo 2 [id=def456...]
 ✅ 2 jogo(s) disponível(is) para resgate
 
 ──────────────────────────────────────────────────────────
   🎁 RESGATANDO JOGOS
 ──────────────────────────────────────────────────────────
-🎮 Attempting to claim: Jogo 1 [offer_id=abc123...]
+🌐 Conectado ao Chrome real via CDP
 ✅ Game claimed: Jogo 1
-🎮 Attempting to claim: Jogo 2 [offer_id=def456...]
 ✅ Game claimed: Jogo 2
 
 ──────────────────────────────────────────────────────────
@@ -207,8 +186,6 @@ python main.py --help
 
 ### Scheduler Interno (Recomendado)
 
-O projeto inclui um scheduler que roda continuamente:
-
 ```bash
 # Inicia o scheduler (roda às 12:00 por padrão)
 python main.py --schedule
@@ -223,32 +200,17 @@ O scheduler:
 - ✅ Roda em loop até ser interrompido (Ctrl+C)
 - ✅ Logs detalhados de cada execução
 
-### Variáveis de Ambiente
-
-Configure no `.env`:
-
-```env
-# Horário do agendamento (padrão: 12:00)
-SCHEDULE_HOUR=12
-SCHEDULE_MINUTE=0
-```
-
-### Task Scheduler (Windows) - Alternativa
-
-Se preferir agendamento externo:
+### Task Scheduler (Windows) — Alternativa
 
 ```powershell
-# Criar tarefa agendada
 schtasks /create /tn "Epic Games Claimer" /tr "C:\caminho\scripts\run.bat" /sc daily /st 12:00
 ```
 
-### Cron (Linux/macOS) - Alternativa
+### Cron (Linux/macOS) — Alternativa
 
 ```bash
-# Abrir crontab
 crontab -e
-
-# Adicionar linha (executa às 12:00 diariamente)
+# Adicionar linha:
 0 12 * * * cd /caminho/Epic-Games-Claimer && .venv/bin/python main.py
 ```
 
@@ -257,47 +219,45 @@ crontab -e
 ```
 Epic-Games-Claimer/
 ├── main.py                 # CLI principal
-├── pyproject.toml          # Configuração do projeto e ferramentas
+├── pyproject.toml          # Configuração do projeto (Ruff, pytest)
 ├── requirements.txt        # Dependências Python
-├── .env.example           # Exemplo de configuração
-├── .env                   # Suas configurações (não versionado)
+├── .env.example            # Exemplo de configuração
 │
-├── src/                   # Código fonte modular
-│   ├── __init__.py
-│   ├── config.py          # Configuração via ambiente
-│   ├── logger.py          # Sistema de logs
-│   ├── session_store.py   # Persistência de sessão
-│   ├── api.py             # Cliente HTTP Epic Games
-│   ├── claimer.py         # Lógica de resgate
-│   └── scheduler.py       # Agendador interno
+├── src/                    # Código fonte modular
+│   ├── api.py              # Cliente HTTP + browser claiming
+│   ├── browser.py          # BrowserManager (Chrome CDP + Playwright)
+│   ├── claimer.py          # Orquestração do resgate
+│   ├── models.py           # Constantes, seletores, enums
+│   ├── config.py           # Configuração via ambiente
+│   ├── logger.py           # Sistema de logs
+│   ├── session_store.py    # Persistência de sessão
+│   ├── scheduler.py        # Agendador interno
+│   ├── chrome_cookies.py   # Extração de cookies (DPAPI/legacy)
+│   └── playwright_cookies.py # Login interativo via Playwright
 │
-├── tests/                 # Suite de testes
-│   ├── __init__.py
-│   ├── conftest.py        # Fixtures do pytest
-│   ├── test_*.py          # Arquivos de teste
-│   └── artifacts/         # Dumps e saídas de teste
+├── scripts/                # Scripts auxiliares
+│   ├── get_cookies.py      # Extrai token do navegador
+│   ├── login.py            # Login interativo
+│   ├── benchmark.py        # Benchmarks de performance
+│   ├── run.bat / run.sh    # Executa uma vez
+│   └── run_scheduled.*     # Modo agendado
 │
-├── scripts/               # Scripts auxiliares
-│   ├── get_cookies.py     # Extrai token do navegador
-│   ├── run.bat            # Executa uma vez (Windows)
-│   ├── run.sh             # Executa uma vez (Unix)
-│   ├── run_scheduled.bat  # Modo agendado (Windows)
-│   └── run_scheduled.sh   # Modo agendado (Unix)
+├── tests/                  # Suite de testes
+│   ├── conftest.py         # Fixtures do pytest
+│   └── test_*.py           # Arquivos de teste
 │
-├── data/                  # Dados persistentes
-│   ├── session.json       # Sessão salva
-│   └── next_games.json    # Info dos jogos
+├── data/                   # Dados persistentes (não versionado)
+│   ├── session.json        # Sessão salva
+│   └── next_games.json     # Info dos jogos
 │
-├── logs/                  # Logs organizados por data
-│   └── 2025/
-│       └── 12/
-│           └── 15.txt
+├── logs/                   # Logs organizados por data
+│   └── YYYY/MM/DD.txt
 │
-├── legacy/                # ⚠️ Código antigo (read-only)
-│   └── (debug_*.py, scripts antigos, HARs)
-│
-└── docs/                  # Documentação adicional
-    └── http-flow.md
+└── docs/                   # Documentação técnica
+    ├── ARCHITECTURE.md     # Estrutura e módulos
+    ├── SECURITY.md         # Práticas de segurança
+    ├── RENEW_TOKEN.md      # Guia de renovação de token
+    └── http-flow.md        # Referência de endpoints HTTP
 ```
 
 ## 🧪 Desenvolvimento
@@ -323,64 +283,52 @@ ruff check --fix src/ tests/
 ### Executar Testes
 
 ```bash
-# Rodar todos os testes
 pytest
-
-# Com cobertura
 pytest --cov=src
-
-# Testes específicos
-pytest tests/test_graphql_methods.py -v
 ```
 
 ## 🔐 Segurança
 
-- ⚠️ **Nunca compartilhe** seu arquivo `.env` ou `session.json`
-- ✅ Adicione ao `.gitignore`:
-  ```
-  .env
-  data/session.json
-  ```
+- ⚠️ **Nunca compartilhe** seu `.env` ou `data/session.json`
+- ✅ Ambos estão no `.gitignore`
 - 🔑 Tokens do navegador expiram em ~8 horas
-- 🔄 Device auth tokens são renovados automaticamente
+- 🔄 Sessão renovada automaticamente quando possível
+- 🔒 Nenhuma senha é solicitada ou armazenada
 
 ## 🔧 Troubleshooting
 
 ### ❌ "Token expirado"
 
 ```bash
-# Gerar novo token
 python scripts/get_cookies.py
 ```
 
-### ❌ "Não foi possível autenticar"
+Ou simplesmente faça login no Chrome e execute novamente — o claimer extrairá os cookies automaticamente.
 
-1. Verifique se `.env` existe e tem credenciais válidas
-2. Delete `data/session.json` para forçar novo login
-3. Execute sem token para usar device auth interativo
+### ❌ "Chrome não conecta via CDP"
+
+- Feche todas as instâncias do Chrome antes de executar
+- Verifique se a porta 9222 não está em uso: `netstat -ano | findstr 9222`
+
+### ❌ "CAPTCHA apareceu"
+
+O claimer aguarda até 5 minutos para resolução manual de CAPTCHA (hCaptcha). Se aparecer, resolva manualmente na janela do Chrome que abrir.
 
 ### ❌ "Erro de conexão"
 
 - Aumente o timeout no `.env`: `TIMEOUT=60`
 - Verifique sua conexão com internet
 
-### ❌ Logs não aparecem
+### ❌ "Jogo não foi resgatado"
 
-- Verifique se a pasta `logs/` tem permissão de escrita
-- Configure `LOG_BASE_DIR` no `.env` se necessário
+- Verifique os logs em `logs/debug/` para screenshots e dumps HTML
+- O jogo pode requerer verificação de idade (age gate) — o claimer tenta automaticamente
+- Alguns jogos podem ter CAPTCHA que precisa de resolução manual
 
 ## 📝 Changelog
 
-### v2.0.0 (2025-12-15)
-- ✨ Estrutura modular (`src/`)
-- ⏰ Scheduler interno para verificação diária
-- 📊 Logs aprimorados com contexto
-- 🧹 Removido código duplicado
-- 📚 Documentação atualizada
-
-### v1.0.0
-- 🎮 Versão inicial HTTP-only
+Veja [CHANGELOG.md](CHANGELOG.md) para histórico completo.
 
 ## 📄 Licença
 
-MIT License - veja [LICENSE](LICENSE) para detalhes.
+MIT License

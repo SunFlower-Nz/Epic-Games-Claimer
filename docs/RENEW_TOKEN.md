@@ -1,141 +1,96 @@
-╔════════════════════════════════════════════════════════════════════════════╗
-║                                                                            ║
-║        🔐 RENOVAR TOKEN EXPIRADO - Guia Passo a Passo                      ║
-║                                                                            ║
-║                   Epic Games Claimer - Autenticação                        ║
-║                                                                            ║
-╚════════════════════════════════════════════════════════════════════════════╝
+# 🔐 Renovar Token — Epic Games Claimer
 
-STATUS: ❌ SEU TOKEN EXPIROU
+## Quando Renovar?
 
-Seu token atual:
-  Conta: <sua_conta>
-  ID: <seu_account_id>
-  Status: EXPIRADO (precisa renovar)
+O token EPIC_EG1 expira em **~8 horas**. Quando expirar, o claimer tentará automaticamente:
+1. Usar a sessão salva em `data/session.json`
+2. Extrair cookies do Chrome via CDP
+3. Solicitar login interativo via Playwright
 
-════════════════════════════════════════════════════════════════════════════
+Na maioria dos casos, basta **fazer login no Chrome** e reexecutar o claimer.
 
-PASSO 1️⃣  - Abra seu navegador e faça login
-════════════════════════════════════════════════════════════════════════════
+---
 
-1. Abra: https://store.epicgames.com
-2. Se não estiver logado, clique em LOGIN
-3. Digite suas credenciais (email/senha)
-4. Deixe carregando completamente
+## Método 1: Automático via Chrome (Recomendado)
 
-════════════════════════════════════════════════════════════════════════════
+1. Abra https://store.epicgames.com no Chrome
+2. Faça login normalmente
+3. Feche o Chrome
+4. Execute:
 
-PASSO 2️⃣  - Copie o novo token do navegador
-════════════════════════════════════════════════════════════════════════════
+```bash
+python main.py
+```
 
-▶️ No Chrome/Edge:
+O claimer copiará o perfil do Chrome e extrairá os cookies automaticamente.
 
-  1. Pressione F12 (abre DevTools)
-  2. Clique na aba "Application" (topo)
-  3. No lado esquerdo, expanda "Cookies"
-  4. Clique em "https://store.epicgames.com"
-  5. Procure por "EPIC_EG1" na lista
-  6. Clique nela
-  7. Você verá o valor no painel abaixo
-  8. Copie todo o valor (começando com eg1~...)
+---
 
-▶️ No Firefox:
+## Método 2: Token Manual
 
-  1. Pressione F12 (abre DevTools)
-  2. Clique na aba "Storage" (topo)
-  3. Expanda "Cookies"
-  4. Clique em "https://store.epicgames.com"
-  5. Procure por "EPIC_EG1"
-  6. Copie o valor (começando com eg1~...)
+Se o método automático não funcionar:
 
-▶️ No Safari:
+### Copie o token do navegador
 
-  1. Pressione Command+Option+I
-  2. Clique em "Storage" → "Cookies"
-  3. Selecione "store.epicgames.com"
-  4. Procure "EPIC_EG1"
-  5. Copie o valor
+**Chrome/Edge:**
+1. Pressione F12 (DevTools)
+2. Aba **Application** → **Cookies** → `https://store.epicgames.com`
+3. Procure `EPIC_EG1`
+4. Copie todo o valor (começa com `eg1~...`)
 
-════════════════════════════════════════════════════════════════════════════
+**Firefox:**
+1. Pressione F12 (DevTools)
+2. Aba **Storage** → **Cookies** → `https://store.epicgames.com`
+3. Procure `EPIC_EG1`
+4. Copie o valor
 
-PASSO 3️⃣  - Cole o token no .env
-════════════════════════════════════════════════════════════════════════════
+### Cole no script
 
-Arquivo: .env (na pasta raiz do projeto)
+```bash
+python scripts/get_cookies.py
+# Cole o token quando solicitado
+```
 
-Encontre a linha:
-  EPIC_EG1=eg1~eyJraWQiOi...
+Ou adicione ao `.env`:
 
-E SUBSTITUA por:
-  EPIC_EG1=eg1~COLE_SEU_NOVO_TOKEN_AQUI
+```env
+EPIC_EG1=eg1~seu_token_aqui
+```
 
-Exemplo (com token fictício):
-  EPIC_EG1=eg1~eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+---
 
-════════════════════════════════════════════════════════════════════════════
+## Método 3: Login Interativo
 
-PASSO 4️⃣  - Teste a autenticação
-════════════════════════════════════════════════════════════════════════════
+Se nenhum token válido for encontrado, o claimer abrirá uma janela do Playwright para login manual:
 
-No terminal/prompt (pasta do projeto):
+```bash
+python main.py
+# Uma janela do browser abrirá
+# Faça login na Epic Games
+# O token será extraído automaticamente
+```
 
-  $ python diagnose.py
+---
 
-Você deve ver:
-  ✅ Token válido por XXh mais
+## ❓ FAQ
 
-════════════════════════════════════════════════════════════════════════════
+**"Não vejo EPIC_EG1 nos cookies"**
+→ Verifique se está realmente logado na Epic Games Store
+→ Tente sair e entrar novamente
 
-PASSO 5️⃣  - Rode o claimer
-════════════════════════════════════════════════════════════════════════════
+**"Token muito curto"**
+→ O token real é muito longo (centenas de caracteres), começa com `eg1~`
+→ Copie o valor completo
 
-  $ python main.py
+**"Ainda dá erro 401 depois de renovar"**
+→ Delete `data/session.json` e tente novamente
+→ Faça logout e login novamente no Chrome
 
-Ou para rodar automaticamente (12h diariamente):
+---
 
-  $ python main.py --schedule
+## ⏰ Dica
 
-════════════════════════════════════════════════════════════════════════════
-
-❓ DÚVIDAS?
-
-❌ "Não vejo EPIC_EG1 nos cookies"
-   → Você realmente fez login? Tente sair e entrar novamente
-   → Tente outro navegador
-   → Verifique se os cookies estão habilitados
-
-❌ "Copiei errado"
-   → Certifique-se que começa com eg1~
-   → O token é muito longo (centenas de caracteres)
-   → Não adicione espaços extras
-
-❌ "Ainda dá erro 401 depois de renovar"
-   → Execute: python diagnose.py
-   → Veja se o token realmente está válido
-   → Tente fazer logout e login novamente no navegador
-   → Copie o token NOVAMENTE (pode ter mudado)
-
-════════════════════════════════════════════════════════════════════════════
-
-⏰ QUANDO RENOVAR NOVAMENTE?
-
-Tokens Epic Games duram ~24 horas.
-Se você rodar o claimer todos os dias, o token pode expirar depois.
-
-Solução: Execute antes de dormir ou quando ver erro 401:
-  $ python diagnose.py
-
-Ele te dirá se o token está vencendo em breve.
-
-════════════════════════════════════════════════════════════════════════════
-
-💡 DICA PROFISSIONAL
-
-Para evitar renovar manualmente toda semana:
-1. Configure o scheduler: python main.py --schedule
-2. Deixe rodando 24/7
-3. Renove o token toda semana (quando receber o aviso)
-
-Isso garante que seus jogos grátis serão resgatados automaticamente!
-
-════════════════════════════════════════════════════════════════════════════
+Para evitar renovar manualmente:
+1. Configure o scheduler: `python main.py --schedule`
+2. Faça login no Chrome antes de cada execução
+3. O claimer extrairá os cookies frescos automaticamente

@@ -1,13 +1,41 @@
 # 📝 CHANGELOG
 
-## [2.0.0] - 2025-12-15 🎉
+## [3.0.0] - 2026-02-17 🎉
 
 ### ✨ Novidades
-- **Scheduler interno** - Verifica jogos grátis automaticamente às 12:00 diariamente
-- **Arquitetura modular** - Código dividido em módulos reutilizáveis (`src/`)
-- **Logs aprimorados** - Contexto estruturado e detalhes em cada operação
-- **CLI com comandos** - `--schedule`, `--check`, `--status`, etc.
-- **Melhor segurança** - Type hints completos, validação de entrada
+- **Chrome CDP** — Usa Chrome real via DevTools Protocol (porta 9222) para bypass de Cloudflare
+- **Cookie injection** — Injeta EPIC_EG1 no contexto do browser (bypass App-Bound Encryption)
+- **BrowserManager** — Novo módulo `src/browser.py` unifica Chrome CDP e Playwright Chromium
+- **Models** — Novo módulo `src/models.py` com constantes, seletores e enums centralizados
+- **Age Gate automático** — Preenche data de nascimento para jogos 18+
+- **Direct purchase fallback** — URL direta de compra quando botão checkout não encontrado
+- **Verificação por namespace** — Entitlements verificados por namespace (offer ID ≠ catalogItemId)
+
+### 🔧 Melhorias
+- Checkout flow: clica "Place Order" primeiro, depois verifica CAPTCHA
+- Detecção de CAPTCHA mais estrita (verifica visibilidade do iframe + keywords fortes)
+- Detecção de resultado: verifica sucesso antes de "já possuído"
+- Chrome lançado com perfil copiado para diretório temporário
+- Click strategy: tenta click normal primeiro (preserva event handlers)
+
+### ❌ Removido
+- Diretório `legacy/` inteiro (substituído por `src/`)
+- Documentação obsoleta sobre Cloudflare workarounds
+- Dados sensíveis removidos do histórico do git
+
+### 🔐 Segurança
+- Dados pessoais removidos de toda a documentação
+- Histórico do git reescrito com `git-filter-repo`
+
+---
+
+## [2.0.0] - 2025-12-15
+
+### ✨ Novidades
+- **Scheduler interno** — Verifica jogos grátis automaticamente às 12:00 diariamente
+- **Arquitetura modular** — Código dividido em módulos reutilizáveis (`src/`)
+- **Logs aprimorados** — Contexto estruturado e detalhes em cada operação
+- **CLI com comandos** — `--schedule`, `--check`, `--status`, etc.
 
 ### 🔧 Refatoração
 - Removido código duplicado (~300 linhas em `claim_game`, `_get_slug`, etc.)
@@ -15,76 +43,11 @@
 - Sessão salva com JWT decodificado para melhor persistência
 - Logger com contexto em cada chamada
 
-### 🗂️ Reorganização
-- **Nova estrutura**:
-  ```
-  src/          → Código modular
-  scripts/      → Helpers (get_cookies.py, run.bat, run.sh)
-  docs/         → Documentação (ARCHITECTURE.md)
-  _old/         → Arquivos descontinuados
-  ```
-
 ### ❌ Removido
 - `epic_games_claimer.py` (monolítico, 1.2k linhas)
 - `epic_games_logger.py` (substituído por aprimorado)
 - Arquivos `.har` (debug)
 - `install.bat/sh` (substituído por pip)
-- `get_cookies.py` da raiz (movido para `scripts/`)
-
-### 📊 Estatísticas
-- **Antes**: 1 arquivo de 1.2k linhas + logs simples
-- **Depois**: 7 módulos focados + logs estruturados
-- **Duplicação removida**: ~300 linhas
-- **Cobertura de logs**: 90%+ das operações com contexto
-
-### 🚀 Como Usar
-
-#### Modo Uma Vez
-```bash
-python main.py
-```
-
-#### Modo Agendado (12:00 diariamente)
-```bash
-python main.py --schedule
-```
-
-#### Apenas Verificar
-```bash
-python main.py --check
-```
-
-#### Ver Status
-```bash
-python main.py --status
-```
-
-### ✅ Testes
-```bash
-# Verificar imports
-python -c "from src import *; print('✅ OK')"
-
-# Testar CLI
-python main.py --help
-python main.py --status
-```
-
-### 📚 Documentação
-- `README.md` - Guia de uso principal
-- `docs/ARCHITECTURE.md` - Estrutura técnica (novo!)
-- `docs/http-flow.md` - Fluxo de requisições HTTP
-- `.env.example` - Variáveis de configuração
-
-### 🔒 Segurança
-- Tokens nunca logados em texto completo
-- `.env` e `session.json` ignorados pelo git
-- Type hints para validação de entrada
-
-### 🎯 Próximos Steps Sugeridos
-1. Testar modo agendado por algumas horas
-2. Verificar logs em `logs/2025/12/15.txt`
-3. Deletar pasta `_old/` se não precisar mais
-4. Adicionar à Task Scheduler/cron se desejar persistência
 
 ---
 

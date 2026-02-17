@@ -1,14 +1,21 @@
-# Epic Games Claimer - HTTP Flow Documentation
+# Epic Games Claimer - HTTP / Browser Flow Documentation
 
 ## Overview
 
-This document describes the HTTP-only authentication and claim flow used by the Epic Games Claimer.
+This document describes the authentication and claim flow used by the Epic Games Claimer.
+
+> **Nota (v3.0.0):** A partir da v3.0.0, o **claim** (resgate) de jogos é feito via **navegador**
+> (Chrome CDP ou Playwright), não mais por chamada HTTP direta ao order API. A API de orders
+> retorna erros 403/captcha quando chamada diretamente. As seções de autenticação e consulta
+> de jogos continuam funcionando via HTTP.
 
 ## Authentication Flow
 
-### Device Authorization (Recommended)
+### Device Authorization (Referência Histórica)
 
-The script uses the **Device Authorization** flow, which is the same method used by the Epic Games Launcher.
+> **Nota:** O client_id/secret do Epic Games Launcher (EGL) atualmente retorna `400 Bad Request`
+> na maioria dos cenários. A autenticação principal agora é via cookies do Chrome (EPIC_EG1)
+> extraídos por CDP. Esta seção é mantida como referência técnica.
 
 ```
 ┌─────────────┐     1. Device Auth Request      ┌──────────────────┐
@@ -132,9 +139,26 @@ Authorization: Bearer {access_token}
 
 ---
 
-## Claiming Games
+## Claiming Games (via Browser)
 
-### Order / Claim
+> **v3.0.0:** O resgate agora é feito via navegador (Chrome CDP ou Playwright).
+> O script navega até a página da loja, clica em "Get" / "Place Order", lida com
+> age gate (jogos 18+), e verifica o entitlement após a compra.
+
+### Fluxo do Browser
+
+```
+1. Abrir https://store.epicgames.com/pt-BR/p/{slug}
+2. Verificar se já possui o jogo (botão "In Library")
+3. Clicar "Get" → "Place Order"
+4. Aguardar confirmação ("Thank you" / "Obrigado")
+5. Verificar entitlement via API (namespace match)
+```
+
+### Order API (Referência Histórica)
+
+> **Nota:** Esta API retorna 403/captcha quando chamada diretamente sem contexto
+> de browser. Mantida como referência técnica.
 
 ```http
 POST https://order-processor-prod.ol.epicgames.com/api/v1/user/{account_id}/orders
